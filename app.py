@@ -102,7 +102,7 @@ m2.metric(
 )
 m2.caption(f"Max Drawdown: {dd2*100:.2f}%")
 
-            )
+        
 
             # ---------------- Chart 1: Normalized Comparison ----------------
             st.subheader("📈 Normalized Price Comparison (Base = 100)")
