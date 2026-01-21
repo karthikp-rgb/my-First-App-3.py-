@@ -35,7 +35,7 @@ def get_monthly_adj_close(ticker: str) -> pd.Series:
         raise ValueError(f"No data returned for ticker '{ticker}'")
 
     if "Adj Close" not in data.columns:
-        raise ValueError(f\"'Adj Close' not available for '{ticker}' (check ticker or yfinance version)\")
+        raise ValueError(f"'Adj Close' not available for '{ticker}' (check ticker or yfinance version)")
 
     s = data["Adj Close"].dropna()
     if s.empty:
