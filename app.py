@@ -27,7 +27,6 @@ def get_monthly_adj_close(ticker: str) -> pd.Series:
     end=end_date.strftime("%Y-%m-%d"),
     interval="1mo",
     progress=False
-)
 
     )
 
