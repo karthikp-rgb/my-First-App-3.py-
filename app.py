@@ -90,8 +90,7 @@ if st.button("Compare Stocks"):
     st.subheader("📌 Key Metrics")
 
     m1, m2 = st.columns(2)
-
-   m1.metric(f"{ticker1} CAGR", f"{float(cagr1)*100:.2f}%")
+m1.metric(f"{ticker1} CAGR", f"{float(cagr1)*100:.2f}%")
 m1.caption(f"Max Drawdown: {float(dd1)*100:.2f}%")
 
 m2.metric(f"{ticker2} CAGR", f"{float(cagr2)*100:.2f}%")
