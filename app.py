@@ -18,15 +18,27 @@ start_date = end_date - timedelta(days=5*365)
 def get_monthly_adj_close(ticker: str) -> pd.Series:
     """
     Download last 5 years monthly adjusted close for a ticker.
-    Returns a Series with Date index and Adj Close values.
-    Raises ValueError if ticker is invalid or no data.
+    Returns a Series with Date index and price values.
     """
     data = yf.download(
-    ticker,
-    start=start_date.strftime("%Y-%m-%d"),
-    end=end_date.strftime("%Y-%m-%d"),
-    interval="1mo",
-    progress=False
+        ticker,
+        start=start_date.strftime("%Y-%m-%d"),
+        end=end_date.strftime("%Y-%m-%d"),
+        interval="1mo",
+        progress=False
+    )
+
+    if data.empty:
+        raise ValueError(f"No data returned for ticker '{ticker}'")
+
+    # Prefer Adjusted Close, fallback to Close
+    price_col = "Adj Close" if "Adj Close" in data.columns else "Close"
+
+    s = data[price_col].dropna()
+
+    s.name = ticker
+    return s
+
 
     )
 
