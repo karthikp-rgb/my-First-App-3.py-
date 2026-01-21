@@ -40,8 +40,6 @@ def get_monthly_adj_close(ticker: str) -> pd.Series:
     return s
 
 
-    )
-
     # yfinance returns a DataFrame; for single ticker, use columns directly [web:22]
     if data.empty:
         raise ValueError(f"No data returned for ticker '{ticker}'")
