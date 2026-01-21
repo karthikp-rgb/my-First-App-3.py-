@@ -85,18 +85,23 @@ if st.button("Compare Stocks"):
             dd2 = max_drawdown(s2)
 
             # ---------------- Metrics Display ----------------
-            st.subheader("📌 Key Metrics")
+            # ---------------- Metrics Display ----------------
+st.subheader("📌 Key Metrics")
 
-            m1, m2 = st.columns(2)
-            m1.metric(
-                label=f"{ticker1} CAGR",
-                value=f"{cagr1*100:.2f}%",
-                delta=f"Max Drawdown: {dd1*100:.2f}%"
-            )
-            m2.metric(
-                label=f"{ticker2} CAGR",
-                value=f"{cagr2*100:.2f}%",
-                delta=f"Max Drawdown: {dd2*100:.2f}%"
+m1, m2 = st.columns(2)
+
+m1.metric(
+    label=f"{ticker1} CAGR",
+    value=f"{cagr1*100:.2f}%"
+)
+m1.caption(f"Max Drawdown: {dd1*100:.2f}%")
+
+m2.metric(
+    label=f"{ticker2} CAGR",
+    value=f"{cagr2*100:.2f}%"
+)
+m2.caption(f"Max Drawdown: {dd2*100:.2f}%")
+
             )
 
             # ---------------- Chart 1: Normalized Comparison ----------------
