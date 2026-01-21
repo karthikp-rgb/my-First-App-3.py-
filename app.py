@@ -6,11 +6,11 @@ from datetime import datetime, timedelta
 
 # ---------------- Page Setup ----------------
 st.set_page_config(page_title="Stock Comparison", layout="centered")
-
 st.title("📊 5-Year Stock Performance Comparison")
+
 st.write(
-    "Compare two stocks using normalized returns, relative performance, "
-    "CAGR, and maximum drawdown."
+    "Compare two stocks based on normalized performance, CAGR, "
+    "maximum drawdown, and relative outperformance."
 )
 
 # ---------------- Inputs ----------------
@@ -40,8 +40,8 @@ def get_monthly_price(ticker: str) -> pd.Series:
     if df.empty:
         raise ValueError(f"No data returned for {ticker}")
 
-    col = "Adj Close" if "Adj Close" in df.columns else "Close"
-    s = df[col].dropna()
+    price_col = "Adj Close" if "Adj Close" in df.columns else "Close"
+    s = df[price_col].dropna()
 
     if s.empty:
         raise ValueError(f"No usable price data for {ticker}")
@@ -50,7 +50,7 @@ def get_monthly_price(ticker: str) -> pd.Series:
     return s
 
 
-def normalize(s: pd.Series) -> pd.Series:
+def normalize_to_100(s: pd.Series) -> pd.Series:
     return (s / s.iloc[0]) * 100
 
 
@@ -66,38 +66,38 @@ def max_drawdown(s: pd.Series) -> float:
 
 # ---------------- Action ----------------
 if st.button("Compare Stocks"):
-    with st.spinner("Fetching data and generating analysis..."):
+    with st.spinner("Fetching data and calculating metrics..."):
         try:
             s1 = get_monthly_price(ticker1)
             s2 = get_monthly_price(ticker2)
 
-            n1 = normalize(s1)
-            n2 = normalize(s2)
+            n1 = normalize_to_100(s1)
+            n2 = normalize_to_100(s2)
 
             df = pd.concat([n1, n2], axis=1)
 
-            cagr1 = calculate_cagr(s1)
-            cagr2 = calculate_cagr(s2)
+            cagr1 = float(calculate_cagr(s1))
+            cagr2 = float(calculate_cagr(s2))
 
-            dd1 = max_drawdown(s1)
-            dd2 = max_drawdown(s2)
+            dd1 = float(max_drawdown(s1))
+            dd2 = float(max_drawdown(s2))
 
         except Exception as e:
             st.error(str(e))
             st.stop()
 
-    # ---------------- Metrics ----------------
+    # ---------------- Key Metrics ----------------
     st.subheader("📌 Key Metrics")
 
-    m1, m2 = st.columns(2)
-m1.metric(f"{ticker1} CAGR", f"{float(cagr1)*100:.2f}%")
-m1.caption(f"Max Drawdown: {float(dd1)*100:.2f}%")
+    colA, colB = st.columns(2)
 
-m2.metric(f"{ticker2} CAGR", f"{float(cagr2)*100:.2f}%")
-m2.caption(f"Max Drawdown: {float(dd2)*100:.2f}%")
+    colA.write(f"**{ticker1} CAGR:** {cagr1*100:.2f}%")
+    colA.write(f"**{ticker1} Max Drawdown:** {dd1*100:.2f}%")
 
+    colB.write(f"**{ticker2} CAGR:** {cagr2*100:.2f}%")
+    colB.write(f"**{ticker2} Max Drawdown:** {dd2*100:.2f}%")
 
-    # ---------------- Chart 1 ----------------
+    # ---------------- Chart 1: Normalized Prices ----------------
     st.subheader("📈 Normalized Price Comparison (Base = 100)")
 
     fig1, ax1 = plt.subplots()
@@ -107,13 +107,13 @@ m2.caption(f"Max Drawdown: {float(dd2)*100:.2f}%")
     ax1.grid(True, linestyle="--", alpha=0.5)
     st.pyplot(fig1)
 
-    # ---------------- Chart 2 ----------------
+    # ---------------- Chart 2: Relative Performance ----------------
     st.subheader("📊 Relative Performance")
 
     diff = df[ticker1] - df[ticker2]
 
     fig2, ax2 = plt.subplots()
-    ax2.plot(diff, color="black", label="Performance Difference")
+    ax2.plot(diff, color="black", label="Difference")
     ax2.axhline(0, linestyle="--")
 
     ax2.fill_between(
