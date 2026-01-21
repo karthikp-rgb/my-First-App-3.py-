@@ -33,11 +33,15 @@ def get_monthly_adj_close(ticker: str) -> pd.Series:
     # yfinance returns a DataFrame; for single ticker, use columns directly [web:22]
     if data.empty:
         raise ValueError(f"No data returned for ticker '{ticker}'")
+# Prefer Adjusted Close, fallback to Close
+price_col = "Adj Close" if "Adj Close" in data.columns else "Close"
 
-    if "Adj Close" not in data.columns:
-        raise ValueError(f"'Adj Close' not available for '{ticker}' (check ticker or yfinance version)")
+s = data[price_col].dropna()
 
-    s = data["Adj Close"].dropna()
+if s.empty:
+    raise ValueError(f"No usable price data for '{ticker}'")
+
+
     if s.empty:
         raise ValueError(f"No adjusted close data for '{ticker}'")
 
