@@ -4,22 +4,26 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 
+# ---------------- UI ----------------
+st.set_page_config(page_title="Stock Comparison", layout="centered")
 st.title("5-Year Normed Price Comparison")
 
-# --- Inputs ---
+st.write(
+    "Compare the 5-year performance of two stocks using normalized prices "
+    "(base value = 100)."
+)
+
+# ---------------- Inputs ----------------
 col1, col2 = st.columns(2)
 ticker1 = col1.text_input("Ticker 1 (e.g., RELIANCE.NS)", "")
 ticker2 = col2.text_input("Ticker 2 (e.g., TCS.NS)", "")
 
-# Last 5 years monthly
+# ---------------- Date Range ----------------
 end_date = datetime.today()
-start_date = end_date - timedelta(days=5*365)
+start_date = end_date - timedelta(days=5 * 365)
 
-def get_monthly_adj_close(ticker: str) -> pd.Series:
-    """
-    Download last 5 years monthly adjusted close for a ticker.
-    Returns a Series with Date index and price values.
-    """
+# ---------------- Data Functions ----------------
+def get_monthly_price(ticker: str) -> pd.Series:
     data = yf.download(
         ticker,
         start=start_date.strftime("%Y-%m-%d"),
@@ -29,77 +33,64 @@ def get_monthly_adj_close(ticker: str) -> pd.Series:
     )
 
     if data.empty:
-        raise ValueError(f"No data returned for ticker '{ticker}'")
+        raise ValueError(f"No data returned for {ticker}")
 
-    # Prefer Adjusted Close, fallback to Close
     price_col = "Adj Close" if "Adj Close" in data.columns else "Close"
-
     s = data[price_col].dropna()
 
-    s.name = ticker
-    return s
-
-
-    # yfinance returns a DataFrame; for single ticker, use columns directly [web:22]
-    if data.empty:
-        raise ValueError(f"No data returned for ticker '{ticker}'")
-# Prefer Adjusted Close, fallback to Close
-price_col = "Adj Close" if "Adj Close" in data.columns else "Close"
-
-s = data[price_col].dropna()
-
-if s.empty:
-    raise ValueError(f"No usable price data for '{ticker}'")
-
-
     if s.empty:
-        raise ValueError(f"No adjusted close data for '{ticker}'")
+        raise ValueError(f"No usable price data for {ticker}")
 
     s.name = ticker
     return s
 
-def normalize_series_to_100(s: pd.Series) -> pd.Series:
-    """
-    Normalize price series so first value = 100 for comparison. [web:15][web:18]
-    """
-    return (s / s.iloc[0]) * 100.0
 
-# --- Action ---
+def normalize_to_100(s: pd.Series) -> pd.Series:
+    return (s / s.iloc[0]) * 100
+
+# ---------------- Action ----------------
 if st.button("Compare"):
-    error_msgs = []
-
+    errors = []
     series_dict = {}
-    for t in [ticker1, ticker2]:
-        if not t:
-            error_msgs.append("Both tickers must be provided.")
-            continue
-        try:
-            s = get_monthly_adj_close(t)
-            series_dict[t] = normalize_series_to_100(s)
-        except Exception as e:
-            error_msgs.append(str(e))
 
-    if error_msgs:
-        st.error("\n".join(error_msgs))
+    with st.spinner("Fetching data and generating charts..."):
+        for t in [ticker1, ticker2]:
+            if not t:
+                errors.append("Both tickers must be provided.")
+                continue
+            try:
+                s = get_monthly_price(t)
+                series_dict[t] = normalize_to_100(s)
+            except Exception as e:
+                errors.append(str(e))
+
+    if errors:
+        for err in errors:
+            st.error(err)
     else:
-        # Align on common dates
-        df_norm = pd.concat(series_dict.values(), axis=1).dropna()
+        df = pd.concat(series_dict.values(), axis=1)
 
-        if df_norm.empty:
-            st.error("No overlapping monthly data for the selected tickers.")
-        else:
-            st.subheader("Normed Adjusted Close (Start = 100)")
-            fig, ax = plt.subplots(figsize=(10, 6))
-            for col in df_norm.columns:
-                ax.plot(df_norm.index, df_norm[col], label=col)
+        # -------- Chart 1: Normalized Price Comparison --------
+        st.subheader("📈 Normalized Price Comparison (Base = 100)")
 
-            ax.set_title("5-Year Monthly Normed Adjusted Close")
-            ax.set_xlabel("Date")
-            ax.set_ylabel("Index (Start = 100)")
-            ax.legend()
-            ax.grid(True, linestyle="--", alpha=0.5)
+        fig1, ax1 = plt.subplots()
+        df.plot(ax=ax1)
+        ax1.set_ylabel("Normalized Price")
+        ax1.set_xlabel("Date")
+        ax1.grid(True, linestyle="--", alpha=0.5)
+        ax1.legend()
+        st.pyplot(fig1)
 
-            st.pyplot(fig)
+        # -------- Chart 2: Relative Performance Difference --------
+        st.subheader("📊 Relative Performance (Difference)")
 
-            st.subheader("Underlying Normed Data")
-            st.dataframe(df_norm.round(2))
+        diff = df.iloc[:, 0] - df.iloc[:, 1]
+
+        fig2, ax2 = plt.subplots()
+        diff.plot(ax=ax2, color="orange", label=f"{df.columns[0]} − {df.columns[1]}")
+        ax2.axhline(0, linestyle="--", linewidth=1)
+        ax2.set_ylabel("Performance Difference")
+        ax2.set_xlabel("Date")
+        ax2.grid(True, linestyle="--", alpha=0.5)
+        ax2.legend()
+        st.pyplot(fig2)
